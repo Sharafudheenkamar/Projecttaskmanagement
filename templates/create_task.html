@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Create Task</h1>
+<form method="POST" class="space-y-4">
+    {% csrf_token %}
+    <div>
+        <label class="block">Title</label>
+        <input type="text" name="title" class="w-full border p-2 rounded" required>
+    </div>
+    <div>
+        <label class="block">Description</label>
+        <textarea name="description" class="w-full border p-2 rounded" required></textarea>
+    </div>
+    <div>
+        <label class="block">Assigned To</label>
+        <select name="assigned_to" class="w-full border p-2 rounded" required>
+            {% for user in users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="block">Due Date</label>
+        <input type="datetime-local" name="due_date" class="w-full border p-2 rounded" required>
+    </div>
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Create Task</button>
+</form>
+{% endblock %}

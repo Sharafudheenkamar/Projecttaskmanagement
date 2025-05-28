@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Create User</h1>
+<form method="POST" class="space-y-4">
+    {% csrf_token %}
+    <div>
+        <label class="block">Username</label>
+        <input type="text" name="username" class="w-full border p-2 rounded" required>
+    </div>
+    <div>
+        <label class="block">Email</label>
+        <input type="email" name="email" class="w-full border p-2 rounded" required>
+    </div>
+    <div>
+        <label class="block">Password</label>
+        <input type="password" name="password" class="w-full border p-2 rounded" required>
+    </div>
+    <div>
+        <label class="block">Role</label>
+        <select name="role" class="w-full border p-2 rounded" required>
+            {% for role in roles %}
+                <option value="{{ role.id }}">{{ role.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="block">Assigned Admin</label>
+        <select name="assigned_admin" class="w-full border p-2 rounded">
+            <option value="">None</option>
+            {% for admin in admins %}
+                <option value="{{ admin.id }}">{{ admin.username }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Create User</button>
+</form>
+{% endblock %}

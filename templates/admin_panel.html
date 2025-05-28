@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Admin Panel</h1>
+
+{% if is_superadmin %}
+    <h2 class="text-xl font-semibold mb-2">Users</h2>
+    <table class="w-full border-collapse border border-gray-300 mb-4">
+        <thead>
+            <tr class="bg-gray-200">
+                <th class="border border-gray-300 p-2">Username</th>
+                <th class="border border-gray-300 p-2">Email</th>
+                <th class="border border-gray-300 p-2">Role</th>
+                <th class="border border-gray-300 p-2">Assigned Admin</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <td class="border border-gray-300 p-2">{{ user.username }}</td>
+                    <td class="border border-gray-300 p-2">{{ user.email }}</td>
+                    <td class="border border-gray-300 p-2">{{ user.userprofile.role.name }}</td>
+                    <td class="border border-gray-300 p-2">{{ user.userprofile.assigned_admin.username|default:"None" }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+<h2 class="text-xl font-semibold mb-2">Tasks</h2>
+<table class="w-full border-collapse border border-gray-300">
+    <thead>
+        <tr class="bg-gray-200">
+            <th class="border border-gray-300 p-2">Title</th>
+            <th class="border border-gray-300 p-2">Assigned To</th>
+            <th class="border border-gray-300 p-2">Status</th>
+            <th class="border border-gray-300 p-2">Due Date</th>
+            <th class="border border-gray-300 p-2">Report</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+            <tr>
+                <td class="border border-gray-300 p-2">{{ task.title }}</td>
+                <td class="border border-gray-300 p-2">{{ task.assigned_to.username }}</td>
+                <td class="border border-gray-300 p-2">{{ task.get_status_display }}</td>
+                <td class="border border-gray-300 p-2">{{ task.due_date }}</td>
+                <td class="border border-gray-300 p-2">
+                    {% if task.status == 'COMPLETED' %}
+                        <a href="{% url 'task_report' pk=task.id %}" class="text-blue-600">View Report</a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
