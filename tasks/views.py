@@ -1,6 +1,7 @@
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,9 +9,50 @@ from rest_framework import permissions
 from .models import Task, UserProfile, Role
 from .serializers import TaskSerializer, TaskReportSerializer, UserProfileSerializer, UserSerializer
 from .permissions import IsSuperAdmin, IsAdminOrSuperAdmin, IsTaskAssigneeOrAdmin
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.utils import timezone
+from django.views import View
+
+
+
+
+
+
+from .models import UserProfile
+
+class LoginView(View):
+    template_name = 'login.html'
+
+    def get(self, request):
+        # If user is already authenticated, redirect to admin panel
+        if request.user.is_authenticated:
+            return redirect('admin_panel')
+        return render(request, self.template_name)
+
+    def post(self, request):
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            # Check user role and redirect to admin panel
+            if hasattr(user, 'userprofile'):
+                role = user.userprofile.role.name
+                if role in ['Admin', 'SuperAdmin']:
+                    messages.success(request, 'Login successful')
+                    return redirect('admin_panel')
+                else:
+                    messages.error(request, 'Access restricted to Admin and SuperAdmin roles')
+                    return redirect('login')
+            else:
+                messages.error(request, 'User profile not found')
+                return redirect('login')
+        else:
+            messages.error(request, 'Invalid username or password')
+            return redirect('login')
 
 # API Views
 class TaskListView(APIView):
@@ -105,6 +147,62 @@ class CreateUserView(LoginRequiredMixin, TemplateView):
             messages.error(request, f'Error creating user: {str(e)}')
         
         return redirect('admin_panel')
+    
+
+# Delete User View
+class DeleteUserView(LoginRequiredMixin, View):
+    def post(self, request, user_id):
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.role.name != 'SuperAdmin':
+            messages.error(request, 'Unauthorized access')
+            return redirect('admin_panel')
+
+        user = get_object_or_404(User, id=user_id)
+        if user == request.user:
+            messages.error(request, 'Cannot delete your own account')
+            return redirect('admin_panel')
+
+        try:
+            user.delete()
+            messages.success(request, 'User deleted successfully')
+        except Exception as e:
+            messages.error(request, f'Error deleting user: {str(e)}')
+        return redirect('admin_panel')
+
+# Assign User to Admin View
+class AssignUserView(LoginRequiredMixin, View):
+    def post(self, request, user_id):
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.role.name != 'SuperAdmin':
+            messages.error(request, 'Unauthorized access')
+            return redirect('admin_panel')
+
+        user = get_object_or_404(User, id=user_id)
+        admin_id = request.POST.get('assigned_admin')
+        try:
+            user_profile = user.userprofile
+            if admin_id:
+                user_profile.assigned_admin = get_object_or_404(User, id=admin_id)
+            else:
+                user_profile.assigned_admin = None
+            user_profile.save()
+            messages.success(request, 'User assignment updated successfully')
+        except Exception as e:
+            messages.error(request, f'Error assigning user: {str(e)}')
+        return redirect('admin_panel')
+
+class DeleteTaskView(LoginRequiredMixin, View):
+    def post(self, request, task_id):
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.role.name != 'SuperAdmin':
+            messages.error(request, 'Unauthorized access')
+            return redirect('admin_panel')
+
+        task = get_object_or_404(Task, id=task_id)
+        try:
+            task.delete()
+            messages.success(request, 'Task deleted successfully')
+        except Exception as e:
+            messages.error(request, f'Error deleting task: {str(e)}')
+        return redirect('admin_panel')
+
 
 class CreateTaskView(LoginRequiredMixin, TemplateView):
     template_name = 'create_task.html'
